@@ -1,4 +1,4 @@
-// index接口订单（iid来源）
+// ========== diquip 相关类型 ==========
 export interface OrderItem {
   id: number;
   orderno: string;
@@ -9,7 +9,6 @@ export interface OrderItem {
   areaname?: string;
 }
 
-// 代理详情单条
 export interface ProxyItem {
   id: number;
   ip: string;
@@ -21,7 +20,6 @@ export interface ProxyItem {
   note?: string;
 }
 
-// 调换返回单条
 export interface ExchangeItem {
   id: number;
   ip: string;
@@ -33,7 +31,16 @@ export interface ExchangeItem {
   note?: string;
 }
 
-// 接口入参
+export interface CompareRow {
+  proxyId: number;
+  project: string;
+  beforeCity: string;
+  beforeSocks: string | null;
+  afterCity: string;
+  afterSocks: string;
+}
+
+// ========== 请求体类型 ==========
 export interface ExchangeBody {
   cookie: string;
   iid: string;
@@ -47,12 +54,14 @@ export interface GetListBody {
   filterKeywords: string[];
 }
 
-// 输出对比行
-export interface CompareRow {
-  proxyId: number;
-  project: string;
-  beforeCity: string;
-  beforeSocks: string | null;
-  afterCity: string;
-  afterSocks: string;
+export interface AddAdsPowerBody {
+  socksList: string[];
+}
+
+// ========== AdsPower 返回类型 ==========
+export interface AdsPowerResultItem {
+  socks: string;
+  addOk: boolean;
+  testOk: boolean;
+  msg: string;
 }

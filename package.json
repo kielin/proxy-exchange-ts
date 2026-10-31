@@ -1,7 +1,7 @@
 {
   "name": "proxy-exchange-ts",
   "version": "1.0.0",
-  "description": "diquip代理调换工具 ts express",
+  "description": "diquip代理调换工具 + AdsPower推送",
   "main": "dist/app.js",
   "scripts": {
     "dev": "ts-node src/app.ts",
@@ -11,7 +11,8 @@
   "dependencies": {
     "express": "^4.21.0",
     "axios": "^1.7.7",
-    "dayjs": "^1.11.13"
+    "dayjs": "^1.11.13",
+    "socks-proxy-agent": "^8.0.4"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
