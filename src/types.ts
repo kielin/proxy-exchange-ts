@@ -65,3 +65,36 @@ export interface AdsPowerResultItem {
   testOk: boolean;
   msg: string;
 }
+
+// 单条环境创建结果，附带完整调试报文
+export interface ProfileCreateItem {
+  proxy_id: string;
+  profile_id: string;
+  profile_no: string;
+  addOk: boolean;
+  msg: string;
+  debug: {
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    requestBody: Record<string, any>;
+    responseBody: any;
+  };
+}
+
+// 统一接口返回
+export interface ApiResp<T> {
+  code: number;
+  data?: T;
+  msg: string;
+}
+
+// 主接口入参：socks数组
+export interface BatchCreateInput {
+  socksList: string[];
+}
+
+// 最终合并返回：代理列表 + 对应的环境列表
+export interface BatchCreateResult {
+  profileList: ProfileCreateItem[];
+}

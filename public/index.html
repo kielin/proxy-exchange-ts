@@ -14,6 +14,7 @@ button{padding:8px 14px;background:#2563eb;color:#fff;border:none;border-radius:
 button:disabled{background:#94a3b8}
 .btn-copy{background:#059669}
 .btn-ads{background:#7c3aed}
+.btn-create{background:#d6b912}
 table{width:100%;border-collapse:collapse;margin-top:14px}
 th,td{border:1px solid #cbd5e1;padding:9px 11px;text-align:left;font-size:13px}
 th{background:#eff4ff}
@@ -63,9 +64,11 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
         <h4 style="margin:0">调换结果</h4>
         <button id="copyAllBtn" class="btn-copy" disabled>📋一键复制全部socks</button>
         <button id="pushAdsBtn" class="btn-ads" disabled>🚀添加到AdsPower（EJ注册）</button>
+        <button id="createEnvBtn" class="btn-create" disabled>创建环境</button>
     </div>
     <div id="resultBox"></div>
     <div id="adsResultBox" style="margin-top:16px"></div>
+    <div id="envResultBox" style="margin-top:16px;"></div>
 </div>
 
 <div class="card">
@@ -76,6 +79,14 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
     </div>
     <div id="testResultBox" style="margin-top:12px"></div>
 </div>
+<!-- <div class="card">
+    <div style="margin-top:14px;">
+        <div style="margin-top:8px">
+            <button id="createEnvBtn">创建环境</button>
+        </div>
+    </div>
+</div>
+<div id="envResultBox" style="margin-top:16px;"></div> -->
 
 <script>
 const $ = s => document.querySelector(s);
@@ -87,9 +98,11 @@ const runBtn = $("#runBtn");
 const copyAllBtn = $("#copyAllBtn");
 const pushAdsBtn = $("#pushAdsBtn");
 const testAddBtn = $("#testAddBtn");
+const createEnvBtn = $("#createEnvBtn");
 
 let selectedIid = null;
 let globalAfterSocksList = [];
+let globalProxyIds = [];
 
 // ===== 加载代理列表 =====
 async function loadProxyList(){
@@ -197,25 +210,57 @@ copyAllBtn.onclick = async ()=>{
 // ===== 推送到AdsPower =====
 async function pushToAdsPower(socksList, resultBox){
     resultBox.innerText = "添加中...";
-    const resp = await fetch("/api/add_to_adspower",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({socksList})
-    });
-    const json = await resp.json();
-    if(json.code !==0){ resultBox.innerText = JSON.stringify(json,null,2); return; }
+    try {
+        console.log('Index.html 执行 pushToAdsPower')
+        const resp = await fetch("/api/add_to_adspower", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ socksList }),
+        });
+        const json = await resp.json();
+        console.log(`[pushToAdsPower] response: ${JSON.stringify(json)}`)
 
-    let html = `<table>
+        if (json.code !== 0) {
+            debugger;
+            resultBox.innerText = `添加失败: ${json.msg || "未知错误"}`;
+            return;
+        }
+
+        const { results, proxyIds: newProxyIds } = json.data;
+        console.log("Updated proxyIds:", newProxyIds);
+        globalProxyIds = [...globalProxyIds, ...newProxyIds]; // Update global proxyIds
+        console.log("更新合并后的总 proxyIds:", globalProxyIds);
+        createEnvBtn.disabled = false;
+
+        // let html = `<table>
+        //     <tr><th>Socks</th><th>添加</th><th>连通</th><th>备注</th></tr>`;
+        // results.forEach(r => {
+        //     html += `<tr>
+        //         <td><pre>${r.socks}</pre></td>
+        //         <td class="${r.addOk ? 'ok' : 'fail'}">${r.addOk ? '✅成功' : '❌失败'}</td>
+        //         <td class="${r.testOk ? 'ok' : 'fail'}">${r.testOk ? '✅可用' : '❌不可用'}</td>
+        //         <td>${r.msg}</td>
+        //     </tr>`;
+        // });
+        // resultBox.innerHTML = html + `</table>`;
+        let html = `<table>
         <tr><th>Socks</th><th>添加</th><th>连通</th><th>备注</th></tr>`;
-    json.data.forEach(r=>{
-        html += `<tr>
-            <td><pre>${r.socks}</pre></td>
-            <td class="${r.addOk?'ok':'fail'}">${r.addOk?'✅成功':'❌失败'}</td>
-            <td class="${r.testOk?'ok':'fail'}">${r.testOk?'✅可用':'❌不可用'}</td>
-            <td>${r.msg}</td>
-        </tr>`;
-    });
-    resultBox.innerHTML = html + `</table>`;
+        
+        // 💡 注意这里：后端返回的是 { results, proxyIds }，所以要用 json.data.results 遍历
+        if (json.data && Array.isArray(json.data.results)) {
+            json.data.results.forEach(r => {
+                html += `<tr>
+                    <td><pre>${r.socks || ''}</pre></td>
+                    <td class="${r.addOk?'ok':'fail'}">${r.addOk?'✅成功':'❌失败'}</td>
+                    <td class="${r.testOk?'ok':'fail'}">${r.testOk?'✅可用':'❌不可用'}</td>
+                    <td>${r.msg || ''}</td>
+                </tr>`;
+            });
+        }
+        resultBox.innerHTML = html + `</table>`;
+    } catch (e) {
+        resultBox.innerText = "网络异常: " + e.message;
+    }
 }
 
 pushAdsBtn.onclick = ()=>pushToAdsPower(globalAfterSocksList, $("#adsResultBox"));
@@ -270,6 +315,58 @@ runBtn.onclick = async ()=>{
         resultBox.innerText = "网络异常: " + e.message;
     }
 };
+
+
+
+createEnvBtn.onclick = async () => {
+    const envResultBox = $("#envResultBox");
+    if (globalProxyIds.length === 0) {
+        envResultBox.innerText = "没有可用的代理 ID";
+        return;
+    }
+    envResultBox.innerText = "创建环境中...";
+    const proxyIds = globalProxyIds.slice(0, 2); // Limit to 2 proxies per batch
+
+    try {
+        const resp = await fetch("/api/create_environment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ proxyIds }),
+        });
+        const json = await resp.json();
+        console.log("Create Environment API Response:", json);
+        createEnvBtn.disabled = true;
+        if (json.code === 0) {
+            envResultBox.innerText = `环境创建成功！创建的环境数: ${proxyIds.length}`;
+        } else {
+            //可能出错
+            envResultBox.innerText = `环境创建失败`;
+        }
+
+        // 💡 核心修复：后端返回的数组在 json.data.createResults 里面
+        if (json.data && Array.isArray(json.data.createResults)) {
+            let html = `<table>
+                <tr><th>Proxy ID</th><th>Profile ID</th><th>Profile No</th><th>状态</th><th>Message</th></tr>`;
+                
+            json.data.createResults.forEach(env => {
+                html += `<tr>
+                    <td>${env.proxy_id || "-"}</td>
+                    <td>${env.profile_id || "-"}</td>
+                    <td>${env.profile_no || "-"}</td>
+                    <td class="${env.addOk ? 'ok' : 'fail'}">${env.addOk ? '✅成功' : '❌失败'}</td>
+                    <td>${env.msg || "-"}</td>
+                </tr>`;
+            });
+            
+            envResultBox.innerHTML = html + `</table>`;
+        } else {
+            envResultBox.innerText = "返回的数据格式不正确: " + JSON.stringify(json);
+        }
+    } catch (e) {
+        envResultBox.innerText = "网络异常: " + e.message;
+    }
+};
+
 </script>
 </body>
 </html>
