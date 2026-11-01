@@ -45,7 +45,7 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
     </div>
 
     <div style="margin-bottom:12px;">
-        <button id="loadListBtn" disabled>2.刷新代理列表</button>
+        <button id="loadListBtn">2.刷新代理列表</button>
     </div>
     <div id="listBox"></div>
 
@@ -100,7 +100,7 @@ const pushAdsBtn = $("#pushAdsBtn");
 const testAddBtn = $("#testAddBtn");
 const createEnvBtn = $("#createEnvBtn");
 
-let selectedIid = null;
+let selectedIid = null|42206;
 let globalAfterSocksList = [];
 let globalProxyIds = [];
 
@@ -161,7 +161,7 @@ loadOrderBtn.onclick = async ()=>{
 
     const orders = json.data;
     selectedIid = null;
-    loadListBtn.disabled = true;
+    // loadListBtn.disabled = true;
     runBtn.disabled = true;
     copyAllBtn.disabled = true;
     pushAdsBtn.disabled = true;
@@ -185,7 +185,7 @@ loadOrderBtn.onclick = async ()=>{
     $$('input[name="orderRadio"]').forEach(rd=>{
         rd.onchange = async function(){
             selectedIid = this.dataset.iid;
-            loadListBtn.disabled = false;
+            // loadListBtn.disabled = false;
             await loadProxyList();
         };
     });
@@ -335,8 +335,9 @@ createEnvBtn.onclick = async () => {
         });
         const json = await resp.json();
         console.log("Create Environment API Response:", json);
-        createEnvBtn.disabled = true;
+        
         if (json.code === 0) {
+            createEnvBtn.disabled = true;
             envResultBox.innerText = `环境创建成功！创建的环境数: ${proxyIds.length}`;
         } else {
             //可能出错
@@ -359,6 +360,20 @@ createEnvBtn.onclick = async () => {
             });
             
             envResultBox.innerHTML = html + `</table>`;
+
+             // ===== NEW: START =====
+            // 1. 收集所有创建【成功】的 proxy_id
+            const successProxyIds = json.data.createResults
+                .filter(env => env.addOk === true)
+                .map(env => String(env.proxy_id)); // 确保转成字符串，防止类型不匹配
+
+            console.log("创建成功的 Proxy IDs (即将从队列中移除):", successProxyIds);
+
+            // 2. 从全局 globalProxyIds 中过滤掉这些已经成功的 ID
+            globalProxyIds = globalProxyIds.filter(id => !successProxyIds.includes(String(id)));
+
+            console.log("移除成功项后，剩余的 globalProxyIds:", globalProxyIds);
+            // ===== NEW: END =====
         } else {
             envResultBox.innerText = "返回的数据格式不正确: " + JSON.stringify(json);
         }

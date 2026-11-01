@@ -6,6 +6,7 @@ const configPath = path.join(__dirname, "../config.json");
 export interface AppConfig {
   adsPowerApiKey: string;
   adsPowerBaseUrl: string;
+  envBrowserTab: string;
 }
 
 let appConfig: AppConfig;
@@ -16,10 +17,11 @@ try {
   appConfig = {
     adsPowerApiKey: parsed.adsPowerApiKey || "",
     adsPowerBaseUrl: "http://127.0.0.1:50325",
+    envBrowserTab: parsed.envBrowserTab
   };
 } catch (e) {
   console.warn("⚠️ config.json 读取失败，AdsPower功能将不可用");
-  appConfig = { adsPowerApiKey: "", adsPowerBaseUrl: "http://127.0.0.1:50325" };
+  appConfig = { adsPowerApiKey: "", adsPowerBaseUrl: "http://127.0.0.1:50325", envBrowserTab:"" };
 }
 
 export default appConfig;

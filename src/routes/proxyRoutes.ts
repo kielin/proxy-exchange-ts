@@ -4,25 +4,9 @@ import path from "path";
 import dayjs from "dayjs";
 import { fetchOrders, fetchProxyDetails, exchangeProxies } from "../services/diquipApi";
 import { ProxyItem, ExchangeItem, CompareRow, ExchangeBody, GetListBody } from "../types";
+import { writeHistoryLog } from "../utils/log";
 
 const router = Router();
-
-/** 写日志 */
-function writeHistoryLog(rows: CompareRow[]) {
-  const dateStr = dayjs().format("YYYY-MM-DD");
-  const logFileName = `history-${dateStr}.txt`;
-  const logPath = path.join(__dirname, "../../", logFileName);
-  const now = dayjs().format("YYYY-MM-DD HH:mm:ss");
-
-  const lines: string[] = [];
-  for (const r of rows) {
-    lines.push(`${now}：  旧： ${r.project}|${r.beforeCity} ${r.proxyId}`);
-    lines.push(`${r.beforeSocks}  --> ${r.project}|${r.afterCity} ${r.proxyId}`);
-    lines.push(`${r.afterSocks}`);
-    lines.push("");
-  }
-  fs.appendFileSync(logPath, lines.join("\n"), "utf-8");
-}
 
 /** GET /api/get_orders */
 router.post("/get_orders", async (req: Request, res: Response) => {

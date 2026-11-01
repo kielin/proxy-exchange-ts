@@ -98,3 +98,12 @@ export interface BatchCreateInput {
 export interface BatchCreateResult {
   profileList: ProfileCreateItem[];
 }
+
+export interface EnvCreateRow {
+  proxyId: string;
+  profileId: string;
+  profileNo: string;
+  status: string;
+  message: string;
+}
+

@@ -21,6 +21,9 @@ async function createSingleProfile(proxyId: string, tagId: string): Promise<Prof
       group_id: "0", // Default group
       proxyid: proxyId,
       profile_tag_ids: [tagId],
+      remark: "EJ注册",
+      platform:`${config.envBrowserTab}`,
+      tabs:[`${config.envBrowserTab}`],
       fingerprint_config: {
           gpu: "2", // Disable hardware acceleration
           browser_kernel_config: {
