@@ -16,7 +16,7 @@ function getHeaders() {
  */
 async function createSingleProfile(proxyId: string, tagId: string): Promise<ProfileCreateItem> {
   const headers = getHeaders();
-  const url = `${config.adsPowerBaseUrl}/api/v1/user/create`;
+  const url = `${config.adsPowerBaseUrl}/api/v2/browser-profile/create`;
   const requestBody = {
       group_id: "0", // Default group
       proxyid: proxyId,
@@ -66,8 +66,8 @@ async function createSingleProfile(proxyId: string, tagId: string): Promise<Prof
       ret.debug.responseBody = resp.data;
       if (resp.data.code === 0) {
           const data = resp.data.data || {};
-          ret.profile_id = data.id || "";
-          ret.profile_no = String(data.serial_number || "");
+          ret.profile_id = data.profile_id || "";
+          ret.profile_no = String(data.profile_no || "");
           ret.addOk = true;
           ret.msg = "✅环境创建成功";
       } else {

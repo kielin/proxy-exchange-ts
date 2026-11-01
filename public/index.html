@@ -64,7 +64,7 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
         <h4 style="margin:0">调换结果</h4>
         <button id="copyAllBtn" class="btn-copy" disabled>📋一键复制全部socks</button>
         <button id="pushAdsBtn" class="btn-ads" disabled>🚀添加到AdsPower（EJ注册）</button>
-        <button id="createEnvBtn" class="btn-create" disabled>创建环境</button>
+        <button id="createEnvBtn" class="btn-create">创建环境</button>
     </div>
     <div id="resultBox"></div>
     <div id="adsResultBox" style="margin-top:16px"></div>
@@ -79,14 +79,6 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
     </div>
     <div id="testResultBox" style="margin-top:12px"></div>
 </div>
-<!-- <div class="card">
-    <div style="margin-top:14px;">
-        <div style="margin-top:8px">
-            <button id="createEnvBtn">创建环境</button>
-        </div>
-    </div>
-</div>
-<div id="envResultBox" style="margin-top:16px;"></div> -->
 
 <script>
 const $ = s => document.querySelector(s);
@@ -232,17 +224,6 @@ async function pushToAdsPower(socksList, resultBox){
         console.log("更新合并后的总 proxyIds:", globalProxyIds);
         createEnvBtn.disabled = false;
 
-        // let html = `<table>
-        //     <tr><th>Socks</th><th>添加</th><th>连通</th><th>备注</th></tr>`;
-        // results.forEach(r => {
-        //     html += `<tr>
-        //         <td><pre>${r.socks}</pre></td>
-        //         <td class="${r.addOk ? 'ok' : 'fail'}">${r.addOk ? '✅成功' : '❌失败'}</td>
-        //         <td class="${r.testOk ? 'ok' : 'fail'}">${r.testOk ? '✅可用' : '❌不可用'}</td>
-        //         <td>${r.msg}</td>
-        //     </tr>`;
-        // });
-        // resultBox.innerHTML = html + `</table>`;
         let html = `<table>
         <tr><th>Socks</th><th>添加</th><th>连通</th><th>备注</th></tr>`;
         
@@ -320,6 +301,8 @@ runBtn.onclick = async ()=>{
 
 createEnvBtn.onclick = async () => {
     const envResultBox = $("#envResultBox");
+    // for debug purpose, set the globalProxyIds=[177,178]
+    globalProxyIds=[177,178];
     if (globalProxyIds.length === 0) {
         envResultBox.innerText = "没有可用的代理 ID";
         return;
@@ -337,7 +320,8 @@ createEnvBtn.onclick = async () => {
         console.log("Create Environment API Response:", json);
         
         if (json.code === 0) {
-            createEnvBtn.disabled = true;
+            //for debug, comment it
+            // createEnvBtn.disabled = true;
             envResultBox.innerText = `环境创建成功！创建的环境数: ${proxyIds.length}`;
         } else {
             //可能出错
