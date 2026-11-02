@@ -107,3 +107,14 @@ export interface EnvCreateRow {
   message: string;
 }
 
+export interface IpLookupResult {
+  ip: string;
+  country: string;
+  region: string;
+  city: string;
+  isp: string;
+  success: boolean;
+  msg?: string;
+}
+
+

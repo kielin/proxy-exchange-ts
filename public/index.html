@@ -25,9 +25,11 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
 </style>
 </head>
 <body>
-<h2>代理IP调换工具（模块化版）</h2>
+<h2>代理IP调换工具-AdsPower</h2>
 
 <div class="card">
+    <p class="fail">⚠️ 每日必须更新config中的envBrowserTab注册URL</p>
+    <p class="fail">⚠️ 正式跑的时候必须要把globalProxyIds注释掉，可搜索 globalProxyIds=[177,178];</p>
     <p class="warn">⚠️ Cookie从浏览器F12复制；AdsPower ApiKey在config.json配置</p>
     <div style="margin-bottom:12px;">
         <label>完整Cookie字符串</label>
@@ -63,8 +65,8 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
     <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
         <h4 style="margin:0">调换结果</h4>
         <button id="copyAllBtn" class="btn-copy" disabled>📋一键复制全部socks</button>
-        <button id="pushAdsBtn" class="btn-ads" disabled>🚀添加到AdsPower（EJ注册）</button>
-        <button id="createEnvBtn" class="btn-create">创建环境</button>
+        <button id="pushAdsBtn" class="btn-ads" disabled>4. 🚀添加到AdsPower（EJ注册）</button>
+        <button id="createEnvBtn" class="btn-create">5. AdsPower创建环境</button>
     </div>
     <div id="resultBox"></div>
     <div id="adsResultBox" style="margin-top:16px"></div>
@@ -78,6 +80,11 @@ pre{margin:0;font-family:Menlo,monospace;white-space:pre-wrap;word-break:break-a
         <button id="testAddBtn">添加并测试</button>
     </div>
     <div id="testResultBox" style="margin-top:12px"></div>
+</div>
+<div>
+    <input id="ipInput" placeholder="输入IP，例如：223.93.69.206">
+    <button onclick="queryIp()">查询IP属地</button>
+    <pre id="ipResult"></pre>
 </div>
 
 <script>
@@ -95,6 +102,30 @@ const createEnvBtn = $("#createEnvBtn");
 let selectedIid = null|42206;
 let globalAfterSocksList = [];
 let globalProxyIds = [];
+
+// 💡 全局复制辅助函数
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("复制成功！");
+        }).catch(err => {
+            console.error("复制失败:", err);
+        });
+    } else {
+        // 兼容低版本浏览器的后备方案
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand("copy");
+            alert("复制成功！");
+        } catch (err) {
+            alert("复制失败，请手动复制");
+        }
+        document.body.removeChild(textarea);
+    }
+}
 
 // ===== 加载代理列表 =====
 async function loadProxyList(){
@@ -213,7 +244,6 @@ async function pushToAdsPower(socksList, resultBox){
         console.log(`[pushToAdsPower] response: ${JSON.stringify(json)}`)
 
         if (json.code !== 0) {
-            debugger;
             resultBox.innerText = `添加失败: ${json.msg || "未知错误"}`;
             return;
         }
@@ -307,64 +337,82 @@ createEnvBtn.onclick = async () => {
         envResultBox.innerText = "没有可用的代理 ID";
         return;
     }
-    envResultBox.innerText = "创建环境中...";
-    const proxyIds = globalProxyIds.slice(0, 2); // Limit to 2 proxies per batch
+    envResultBox.innerText = "创建并激活环境中...";
+    createEnvBtn.disabled = true; 
 
     try {
         const resp = await fetch("/api/create_environment", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ proxyIds }),
+            body: JSON.stringify({ proxyIds: globalProxyIds }),
         });
         const json = await resp.json();
-        console.log("Create Environment API Response:", json);
-        
-        if (json.code === 0) {
-            //for debug, comment it
-            // createEnvBtn.disabled = true;
-            envResultBox.innerText = `环境创建成功！创建的环境数: ${proxyIds.length}`;
-        } else {
-            //可能出错
-            envResultBox.innerText = `环境创建失败`;
+        createEnvBtn.disabled = false; 
+
+        if (json.code !== 0) {
+            envResultBox.innerText = JSON.stringify(json, null, 2);
+            return;
         }
 
-        // 💡 核心修复：后端返回的数组在 json.data.createResults 里面
         if (json.data && Array.isArray(json.data.createResults)) {
+            // 💡 更新更丰富的表格表头
             let html = `<table>
-                <tr><th>Proxy ID</th><th>Profile ID</th><th>Profile No</th><th>状态</th><th>Message</th></tr>`;
+                <tr>
+                    <th>Proxy ID</th>
+                    <th>Profile ID</th>
+                    <th>Profile No</th>
+                    <th>IP</th>
+                    <th>IP所在地</th>
+                    <th>UA</th>
+                    <th>操作</th>
+                </tr>`;
                 
             json.data.createResults.forEach(env => {
+                const loc = env.browser_location || "-";
+                const ip = env.browser_ip || "-";
+                const pid = env.profile_id || "-";
+                const pno = env.profile_no || "-";
+                const ua = env.browser_ua || "-";
+
+                // 格式定义：IP所在地 \t IP \t profile_id \t profile_no \t UA
+                const copyText = `${loc}\t${ip}\t${pid}\t${pno}\t${ua}`;
+
                 html += `<tr>
                     <td>${env.proxy_id || "-"}</td>
-                    <td>${env.profile_id || "-"}</td>
-                    <td>${env.profile_no || "-"}</td>
-                    <td class="${env.addOk ? 'ok' : 'fail'}">${env.addOk ? '✅成功' : '❌失败'}</td>
-                    <td>${env.msg || "-"}</td>
+                    <td>${pid}</td>
+                    <td>${pno}</td>
+                    <td><span style="color:#007bff; font-weight:bold;">${ip}</span></td>
+                    <!-- 💡 此时这里展现的不仅是国别，而是漂亮的 "中国 广东省 深圳市" 格式 -->
+                    <td><span class="badge-loc" style="background:#e6f7ff; padding:4px 8px; border-radius:4px;">${loc}</span></td>
+                    <td><div style="max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${ua}">${ua}</div></td>
+                    <td>
+                        <button class="btn-copy-row" onclick="copyToClipboard(\`${copyText}\`)">📋 快捷复制</button>
+                    </td>
                 </tr>`;
-            });
+                });
             
             envResultBox.innerHTML = html + `</table>`;
 
-             // ===== NEW: START =====
-            // 1. 收集所有创建【成功】的 proxy_id
+            // 成功队列移除逻辑保持不变
             const successProxyIds = json.data.createResults
                 .filter(env => env.addOk === true)
-                .map(env => String(env.proxy_id)); // 确保转成字符串，防止类型不匹配
-
-            console.log("创建成功的 Proxy IDs (即将从队列中移除):", successProxyIds);
-
-            // 2. 从全局 globalProxyIds 中过滤掉这些已经成功的 ID
+                .map(env => String(env.proxy_id));
             globalProxyIds = globalProxyIds.filter(id => !successProxyIds.includes(String(id)));
-
-            console.log("移除成功项后，剩余的 globalProxyIds:", globalProxyIds);
-            // ===== NEW: END =====
+            
         } else {
-            envResultBox.innerText = "返回的数据格式不正确: " + JSON.stringify(json);
+            envResultBox.innerText = "数据格式不正确: " + JSON.stringify(json);
         }
     } catch (e) {
+        createEnvBtn.disabled = false;
         envResultBox.innerText = "网络异常: " + e.message;
     }
 };
+
+async function queryIp(){
+    const res = await fetch(`/api/ip-lookup?ip=${encodeURIComponent(ip)}`);
+    const json = await res.json();
+    document.getElementById("ipResult").innerText = JSON.stringify(json,null,2);
+  }
 
 </script>
 </body>
